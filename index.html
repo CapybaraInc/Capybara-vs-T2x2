@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Capybara-vs-T2x2: T-2 X-2</title>
+    <title>Capybara-vs-T2x2</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body { background:#0a0a1a; display:flex; justify-content:center; align-items:center; min-height:100vh; font-family:'Segoe UI', sans-serif; padding:10px; }
@@ -78,6 +78,13 @@
             } catch(e) {}
         }
 
+        // ===== ФОТО =====
+        const bossStand = new Image();
+        const bossHit = new Image();
+        // Загружаем фото из репозитория
+        bossStand.src = 'boss-stand.png';
+        bossHit.src = 'boss-hit.png';
+
         // ===== СОСТОЯНИЕ =====
         let score = 0;
         let health = 3;
@@ -94,15 +101,15 @@
         let bossHitEffect = 0;
         let wingTimer = 0;
 
-        const GROUND = H - 60;
-        const LANE_W = 60;
+        const GROUND = H - 40;
+        const LANE_W = 50;
         const LANES = [-LANE_W, 0, LANE_W];
 
         let player = {
             x: 50 + LANES[1],
-            y: GROUND - 40,
-            w: 30,
-            h: 40,
+            y: GROUND - 50,
+            w: 25,
+            h: 30,
             vy: 0,
             grounded: true
         };
@@ -112,12 +119,6 @@
         let wings = [];
         let backpacks = [];
         let boss = null;
-
-        // ===== ФОТО =====
-        const bossStand = new Image();
-        bossStand.src = 'boss-stand.png';
-        const bossHit = new Image();
-        bossHit.src = 'boss-hit.png';
 
         // ===== СБРОС =====
         function reset() {
@@ -136,7 +137,7 @@
             bossHitEffect = 0;
             wingTimer = 0;
             player.x = 50 + LANES[1];
-            player.y = GROUND - 40;
+            player.y = GROUND - 50;
             player.vy = 0;
             player.grounded = true;
             obstacles = [];
@@ -157,7 +158,7 @@
         function jump() {
             if (gameOver || gameWin) return;
             if (player.grounded) {
-                player.vy = -7;
+                player.vy = -6;
                 player.grounded = false;
                 playTone(400, 0.1, 'sine', 0.08);
             }
@@ -167,10 +168,10 @@
             if (gameOver || gameWin) return;
             if (!bossActive || bossDefeated) return;
             backpacks.push({
-                x: player.x + 20,
+                x: player.x + 15,
                 y: player.y + 10,
-                w: 15,
-                h: 12,
+                w: 12,
+                h: 10,
                 vx: 6
             });
             playTone(800, 0.05, 'square', 0.05);
@@ -189,21 +190,20 @@
             const l = Math.floor(Math.random() * 3);
             coins.push({
                 x: 50 + LANES[l],
-                y: 20 + Math.random() * 100,
-                w: 12,
-                h: 12,
+                y: 10,
+                w: 10,
+                h: 10,
                 collected: false
             });
         }
 
         function spawnObstacle() {
             const l = Math.floor(Math.random() * 3);
-            const y = 20 + Math.random() * 100;
             obstacles.push({
                 x: 50 + LANES[l],
-                y: y,
-                w: 25,
-                h: 25,
+                y: 10,
+                w: 20,
+                h: 20,
                 hit: false
             });
         }
@@ -213,23 +213,22 @@
             const l = Math.floor(Math.random() * 3);
             wings.push({
                 x: 50 + LANES[l],
-                y: 20 + Math.random() * 80,
-                w: 18,
-                h: 12,
-                vx: -3 - Math.random() * 2
+                y: 10,
+                w: 15,
+                h: 10,
+                vx: -2 - Math.random() * 2
             });
         }
 
         function spawnBoss() {
             boss = {
                 x: 50 + LANES[1],
-                y: 30,
-                w: 60,
-                h: 80,
+                y: H - 100,
+                w: 70,
+                h: 90,
                 attackTimer: 0,
                 cooldown: 50,
-                phraseTimer: 0,
-                phase: 0
+                phraseTimer: 0
             };
             bossActive = true;
             bossSpawned = true;
@@ -253,9 +252,19 @@
                 player.grounded = true;
             }
 
-            // Монеты
+            // Движение объектов вверх
             for (let c of coins) {
                 c.y += speed;
+            }
+            for (let o of obstacles) {
+                o.y += speed;
+            }
+            for (let w of wings) {
+                w.y += speed;
+            }
+
+            // Монеты
+            for (let c of coins) {
                 if (!c.collected) {
                     if (player.x + player.w > c.x && player.x < c.x + c.w &&
                         player.y + player.h > c.y && player.y < c.y + c.h) {
@@ -270,7 +279,6 @@
 
             // Препятствия
             for (let o of obstacles) {
-                o.y += speed;
                 if (!o.hit) {
                     if (player.x + player.w > o.x && player.x < o.x + o.w &&
                         player.y + player.h > o.y && player.y < o.y + o.h) {
@@ -289,8 +297,6 @@
 
             // Крылышки
             for (let w of wings) {
-                w.x += w.vx;
-                w.y += speed * 0.5;
                 if (w.x + w.w > player.x && w.x < player.x + player.w &&
                     w.y + w.h > player.y && w.y < player.y + player.h) {
                     health--;
@@ -303,7 +309,7 @@
                     }
                 }
             }
-            wings = wings.filter(w => w.x > -40 && w.x < W + 40 && w.y < H + 20);
+            wings = wings.filter(w => w.y < H + 20);
 
             // Ранцы
             for (let b of backpacks) {
@@ -314,7 +320,6 @@
             // Босс
             if (bossActive && boss && !bossDefeated) {
                 boss.attackTimer++;
-                boss.phraseTimer++;
                 if (boss.attackTimer >= boss.cooldown) {
                     spawnWing();
                     boss.attackTimer = 0;
@@ -387,27 +392,24 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, W, H);
 
-            // Дорога
-            ctx.fillStyle = '#4a4a4a';
-            ctx.fillRect(0, GROUND, W, H - GROUND);
-            ctx.fillStyle = '#ff00ff33';
-            for (let i = 0; i < 20; i++) {
-                ctx.fillRect(i * 40 + frame * 2 % 800, GROUND + 5, 20, 4);
-            }
-
-            // Полосы дорожек
-            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            // Дорожки
+            ctx.fillStyle = '#3a3a4a';
+            ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = 'rgba(255,255,255,0.05)';
             for (let i = 0; i < 3; i++) {
-                ctx.fillRect(20 + i * LANE_W * 2 + LANE_W / 2 - 1, 0, 2, GROUND);
+                ctx.fillRect(10 + i * LANE_W * 2 + LANE_W / 2 - 1, 0, 2, H);
+            }
+            for (let i = 0; i < 20; i++) {
+                ctx.fillRect(i * 40 + frame * 2 % 800, GROUND - 10, 20, 4);
             }
 
             // Монеты
             for (let c of coins) {
                 ctx.fillStyle = '#ffcc00';
                 ctx.shadowColor = '#ffcc00';
-                ctx.shadowBlur = 15;
+                ctx.shadowBlur = 10;
                 ctx.beginPath();
-                ctx.arc(c.x + c.w / 2, c.y + c.h / 2, 6, 0, Math.PI * 2);
+                ctx.arc(c.x + c.w / 2, c.y + c.h / 2, 5, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.shadowBlur = 0;
             }
@@ -436,18 +438,14 @@
                 ctx.fillRect(b.x + 4, b.y - 2, 8, 4);
             }
 
-            // Босс
+            // Босс (фото с ведром KFC)
             if (bossActive && boss && !bossDefeated) {
-                ctx.save();
-                ctx.translate(boss.x, boss.y);
-                // Фото босса
-                ctx.drawImage(bossStand, 0, 0, boss.w, boss.h);
-                ctx.restore();
+                ctx.drawImage(bossStand, boss.x, boss.y, boss.w, boss.h);
                 // HP
                 ctx.fillStyle = '#333';
-                ctx.fillRect(boss.x, boss.y - 15, boss.w, 6);
+                ctx.fillRect(boss.x, boss.y - 10, boss.w, 5);
                 ctx.fillStyle = '#ffcc00';
-                ctx.fillRect(boss.x, boss.y - 15, boss.w * (bossHealth / 5), 6);
+                ctx.fillRect(boss.x, boss.y - 10, boss.w * (bossHealth / 5), 5);
             }
 
             // Кричащее лицо при попадании
@@ -462,7 +460,7 @@
             ctx.fillStyle = '#8B5A2B';
             ctx.fillRect(player.x, player.y, player.w, player.h);
             ctx.fillStyle = '#5C3A1E';
-            ctx.fillRect(player.x + 4, player.y - 6, 22, 8);
+            ctx.fillRect(player.x + 4, player.y - 4, 18, 6);
 
             if (gameOver) {
                 ctx.fillStyle = 'rgba(0,0,0,0.7)';
@@ -505,7 +503,7 @@
 
         reset();
         loop();
-        console.log('🦫 Capybara-vs-T2x2: T-2 X-2 готова!');
+        console.log('🦫 Capybara-vs-T2x2 готова!');
     })();
 </script>
 </body>
