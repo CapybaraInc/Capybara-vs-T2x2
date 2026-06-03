@@ -81,7 +81,6 @@
         // ===== ФОТО =====
         const bossStand = new Image();
         const bossHit = new Image();
-        // Загружаем фото из репозитория
         bossStand.src = 'boss-stand.png';
         bossHit.src = 'boss-hit.png';
 
@@ -96,20 +95,19 @@
         let bossSpawned = false;
         let frame = 0;
         let speed = 4;
-        let lane = 1; // 0,1,2
+        let lane = 1;
         let hitEffect = 0;
         let bossHitEffect = 0;
-        let wingTimer = 0;
 
-        const GROUND = H - 40;
-        const LANE_W = 50;
+        const GROUND = H - 80;
+        const LANE_W = 60;
         const LANES = [-LANE_W, 0, LANE_W];
 
         let player = {
             x: 50 + LANES[1],
-            y: GROUND - 50,
+            y: H - 100,
             w: 25,
-            h: 30,
+            h: 35,
             vy: 0,
             grounded: true
         };
@@ -135,9 +133,8 @@
             lane = 1;
             hitEffect = 0;
             bossHitEffect = 0;
-            wingTimer = 0;
             player.x = 50 + LANES[1];
-            player.y = GROUND - 50;
+            player.y = H - 100;
             player.vy = 0;
             player.grounded = true;
             obstacles = [];
@@ -158,7 +155,7 @@
         function jump() {
             if (gameOver || gameWin) return;
             if (player.grounded) {
-                player.vy = -6;
+                player.vy = -7;
                 player.grounded = false;
                 playTone(400, 0.1, 'sine', 0.08);
             }
@@ -172,7 +169,7 @@
                 y: player.y + 10,
                 w: 12,
                 h: 10,
-                vx: 6
+                vx: 5
             });
             playTone(800, 0.05, 'square', 0.05);
         }
@@ -190,7 +187,7 @@
             const l = Math.floor(Math.random() * 3);
             coins.push({
                 x: 50 + LANES[l],
-                y: 10,
+                y: 20 + Math.random() * 50,
                 w: 10,
                 h: 10,
                 collected: false
@@ -201,7 +198,7 @@
             const l = Math.floor(Math.random() * 3);
             obstacles.push({
                 x: 50 + LANES[l],
-                y: 10,
+                y: 20 + Math.random() * 50,
                 w: 20,
                 h: 20,
                 hit: false
@@ -213,17 +210,17 @@
             const l = Math.floor(Math.random() * 3);
             wings.push({
                 x: 50 + LANES[l],
-                y: 10,
+                y: 20 + Math.random() * 50,
                 w: 15,
                 h: 10,
-                vx: -2 - Math.random() * 2
+                vx: -3 - Math.random() * 2
             });
         }
 
         function spawnBoss() {
             boss = {
                 x: 50 + LANES[1],
-                y: H - 100,
+                y: 30,
                 w: 70,
                 h: 90,
                 attackTimer: 0,
@@ -243,8 +240,8 @@
             if (gameOver || gameWin) return;
             frame++;
 
-            // Физика
-            player.vy += 0.5;
+            // Физика игрока
+            player.vy += 0.4;
             player.y += player.vy;
             if (player.y >= GROUND - player.h) {
                 player.y = GROUND - player.h;
@@ -252,16 +249,10 @@
                 player.grounded = true;
             }
 
-            // Движение объектов вверх
-            for (let c of coins) {
-                c.y += speed;
-            }
-            for (let o of obstacles) {
-                o.y += speed;
-            }
-            for (let w of wings) {
-                w.y += speed;
-            }
+            // Движение объектов вниз
+            for (let c of coins) { c.y += speed; }
+            for (let o of obstacles) { o.y += speed; }
+            for (let w of wings) { w.y += speed; }
 
             // Монеты
             for (let c of coins) {
@@ -397,7 +388,7 @@
             ctx.fillRect(0, 0, W, H);
             ctx.fillStyle = 'rgba(255,255,255,0.05)';
             for (let i = 0; i < 3; i++) {
-                ctx.fillRect(10 + i * LANE_W * 2 + LANE_W / 2 - 1, 0, 2, H);
+                ctx.fillRect(20 + i * LANE_W * 2 + LANE_W / 2 - 1, 0, 2, H);
             }
             for (let i = 0; i < 20; i++) {
                 ctx.fillRect(i * 40 + frame * 2 % 800, GROUND - 10, 20, 4);
@@ -438,7 +429,7 @@
                 ctx.fillRect(b.x + 4, b.y - 2, 8, 4);
             }
 
-            // Босс (фото с ведром KFC)
+            // Босс
             if (bossActive && boss && !bossDefeated) {
                 ctx.drawImage(bossStand, boss.x, boss.y, boss.w, boss.h);
                 // HP
@@ -448,7 +439,7 @@
                 ctx.fillRect(boss.x, boss.y - 10, boss.w * (bossHealth / 5), 5);
             }
 
-            // Кричащее лицо при попадании
+            // Кричащее лицо
             if (bossHitEffect > 0) {
                 const alpha = bossHitEffect / 15;
                 ctx.globalAlpha = alpha;
@@ -492,8 +483,6 @@
         canvas.addEventListener('click', (e) => { e.preventDefault(); jump(); });
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); });
         restartBtn.addEventListener('click', reset);
-
-        // Клавиатура
         document.addEventListener('keydown', (e) => {
             if (e.key === ' ' || e.key === 'ArrowUp') { e.preventDefault(); jump(); }
             if (e.key === 'f' || e.key === 'F') { e.preventDefault(); shoot(); }
