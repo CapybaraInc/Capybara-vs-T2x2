@@ -3,451 +3,521 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Capybara vs T-2 X-2</title>
+    <title>Capybara vs T-2 X-2 (Человек в кофточке)</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            background: #0f0f1a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            font-family: 'Segoe UI', sans-serif;
-            padding: 10px;
-        }
-        .game-wrapper {
-            max-width: 480px;
-            width: 100%;
-            background: #1a1a2e;
-            border-radius: 24px;
-            padding: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-            border: 2px solid #ff00ff;
-        }
-        canvas {
-            display: block;
-            width: 100%;
-            aspect-ratio: 9 / 16;
-            background: #0d1117;
-            border-radius: 16px;
-        }
-        .ui {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #fff;
-            padding: 10px 5px 0;
-            font-weight: bold;
-        }
-        .ui .score {
-            color: #ffcc00;
-        }
-        .ui .health {
-            color: #ff6666;
-        }
-        .btn {
-            background: #ff00ff;
-            border: none;
-            padding: 6px 16px;
-            border-radius: 20px;
-            color: #fff;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .btn:active {
-            transform: scale(0.95);
-        }
-        .msg {
-            text-align: center;
-            color: #aaa;
-            font-size: 0.8rem;
-            margin-top: 5px;
-        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#0a0a1a; display:flex; justify-content:center; align-items:center; min-height:100vh; font-family:'Segoe UI', sans-serif; padding:10px; touch-action:manipulation; }
+        .game-wrapper { max-width:420px; width:100%; background:#0a0a1a; border-radius:24px; padding:15px; box-shadow:0 0 60px #ff00ff44; border:1px solid #ff00ff44; }
+        canvas { display:block; width:100%; aspect-ratio:9/16; background:#0a0a1a; border-radius:16px; touch-action:none; }
+        .ui { display:flex; justify-content:space-between; align-items:center; color:#fff; padding:10px 5px 0; font-weight:bold; }
+        .ui .score { color:#ffcc00; text-shadow:0 0 10px #ffcc00; }
+        .ui .health { color:#ff6666; text-shadow:0 0 10px #ff6666; }
+        .btn { background:#ff00ff; border:none; padding:6px 16px; border-radius:20px; color:#fff; font-weight:bold; cursor:pointer; box-shadow:0 0 20px #ff00ff44; }
+        .btn:active { transform:scale(0.95); }
+        .controls { display:flex; justify-content:center; gap:10px; margin-top:10px; }
+        .controls button { background:#222; border:2px solid #ff00ff; color:#fff; padding:10px 20px; border-radius:30px; font-weight:bold; cursor:pointer; }
+        .controls button:active { background:#ff00ff44; }
+        .msg { text-align:center; color:#aaa; font-size:0.8rem; margin-top:5px; }
     </style>
 </head>
 <body>
-    <div class="game-wrapper">
-        <canvas id="gameCanvas"></canvas>
-        <div class="ui">
-            <span class="score">🍊 <span id="scoreDisplay">0</span></span>
-            <span class="health">❤️ <span id="healthDisplay">3</span></span>
-            <button class="btn" id="restartBtn">↺</button>
-        </div>
-        <div class="msg" id="msgDisplay">Беги и собирай апельсинки!</div>
+<div class="game-wrapper">
+    <canvas id="gameCanvas"></canvas>
+    <div class="ui">
+        <span class="score">🍊 <span id="scoreDisplay">0</span></span>
+        <span class="health">❤️ <span id="healthDisplay">3</span></span>
+        <button class="btn" id="restartBtn">↺</button>
     </div>
-    <script>
-        (function() {
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
-            const scoreDisplay = document.getElementById('scoreDisplay');
-            const healthDisplay = document.getElementById('healthDisplay');
-            const msgDisplay = document.getElementById('msgDisplay');
-            const restartBtn = document.getElementById('restartBtn');
+    <div class="controls">
+        <button id="jumpBtn">⬆ Прыжок</button>
+        <button id="shootBtn">🎒 Стрельба</button>
+    </div>
+    <div class="msg" id="msgDisplay">Беги и собирай апельсинки!</div>
+</div>
+<script>
+    (function() {
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const healthDisplay = document.getElementById('healthDisplay');
+        const msgDisplay = document.getElementById('msgDisplay');
+        const restartBtn = document.getElementById('restartBtn');
+        const jumpBtn = document.getElementById('jumpBtn');
+        const shootBtn = document.getElementById('shootBtn');
 
-            const W = canvas.width;
-            const H = canvas.height;
+        const W = canvas.width;
+        const H = canvas.height;
 
-            function resize() {
-                const rect = canvas.getBoundingClientRect();
-                canvas.width = rect.width * (window.devicePixelRatio || 1);
-                canvas.height = rect.height * (window.devicePixelRatio || 1);
-                ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+        function resize() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * (window.devicePixelRatio || 1);
+            canvas.height = rect.height * (window.devicePixelRatio || 1);
+            ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        let score = 0;
+        let health = 3;
+        let gameOver = false;
+        let gameWin = false;
+        let bossActive = false;
+        let bossDefeated = false;
+        let bossHealth = 5;
+        let bossSpawned = false;
+        let frame = 0;
+        let speed = 4;
+
+        const GROUND = H - 60;
+
+        let player = {
+            x: 50,
+            y: GROUND - 40,
+            w: 30,
+            h: 40,
+            vy: 0,
+            grounded: true
+        };
+
+        let obstacles = [];
+        let coins = [];
+        let wings = []; // крылышки KFC, которыми кидается босс
+        let backpacks = [];
+        let trains = [];
+        let boss = null;
+
+        function reset() {
+            score = 0;
+            health = 3;
+            gameOver = false;
+            gameWin = false;
+            bossActive = false;
+            bossDefeated = false;
+            bossHealth = 5;
+            bossSpawned = false;
+            frame = 0;
+            speed = 4;
+            player.y = GROUND - 40;
+            player.vy = 0;
+            player.grounded = true;
+            obstacles = [];
+            coins = [];
+            wings = [];
+            backpacks = [];
+            trains = [];
+            boss = null;
+            msgDisplay.textContent = 'Беги и собирай апельсинки!';
+            updateUI();
+        }
+
+        function updateUI() {
+            scoreDisplay.textContent = score;
+            healthDisplay.textContent = health;
+        }
+
+        function jump() {
+            if (gameOver || gameWin) return;
+            if (player.grounded) {
+                player.vy = -7;
+                player.grounded = false;
             }
-            resize();
-            window.addEventListener('resize', resize);
+        }
 
-            // Игровые переменные
-            let score = 0;
-            let health = 3;
-            let gameOver = false;
-            let gameWin = false;
-            let bossActive = false;
-            let bossDefeated = false;
-            let bossHealth = 5;
-            let bossSpawned = false;
-            let frame = 0;
-            let speed = 4;
+        function shoot() {
+            if (gameOver || gameWin) return;
+            if (!bossActive || bossDefeated) return;
+            backpacks.push({
+                x: player.x + 20,
+                y: player.y + 10,
+                w: 15,
+                h: 12,
+                vx: 6
+            });
+        }
 
-            const GROUND = H - 60;
+        function spawnCoin() {
+            coins.push({
+                x: W + 20,
+                y: 100 + Math.random() * (GROUND - 150),
+                w: 12,
+                h: 12,
+                collected: false
+            });
+        }
 
-            let player = {
-                x: 50,
-                y: GROUND - 40,
-                w: 30,
-                h: 40,
-                vy: 0,
-                grounded: true
+        function spawnObstacle() {
+            let y = GROUND - 30;
+            if (Math.random() < 0.3) y = 80 + Math.random() * 100;
+            obstacles.push({
+                x: W + 20,
+                y: y,
+                w: 20,
+                h: 20,
+                type: Math.random() < 0.5 ? 'meme' : 'burger'
+            });
+        }
+
+        function spawnTrain() {
+            const side = Math.random() < 0.5 ? 'left' : 'right';
+            const y = 100 + Math.random() * (GROUND - 150);
+            const w = 40 + Math.random() * 30;
+            trains.push({
+                x: side === 'left' ? -w : W,
+                y: y,
+                w: w,
+                h: 30,
+                vx: side === 'left' ? 2 : -2,
+                side: side
+            });
+        }
+
+        function spawnBoss() {
+            boss = {
+                x: W - 100,
+                y: 80,
+                w: 60,
+                h: 80,
+                attackTimer: 0,
+                cooldown: 50,
+                phraseTimer: 0
             };
+            bossActive = true;
+            bossSpawned = true;
+            msgDisplay.textContent = '⚡ Босс появился!';
+            obstacles = [];
+            trains = [];
+        }
 
-            let obstacles = [];
-            let coins = [];
-            let backpacks = [];
-            let boss = null;
+        function bossAttack() {
+            if (!bossActive || bossDefeated) return;
+            const count = 1 + Math.floor(Math.random() * 2);
+            for (let i = 0; i < count; i++) {
+                wings.push({
+                    x: boss.x - 10,
+                    y: boss.y + 30 + i * 20,
+                    w: 18,
+                    h: 12,
+                    vx: -4 - Math.random() * 2,
+                    vy: (Math.random() - 0.5) * 2
+                });
+            }
+        }
 
-            function reset() {
-                score = 0;
-                health = 3;
-                gameOver = false;
-                gameWin = false;
-                bossActive = false;
-                bossDefeated = false;
-                bossHealth = 5;
-                bossSpawned = false;
-                frame = 0;
-                speed = 4;
-                player.y = GROUND - 40;
+        function update() {
+            if (gameOver || gameWin) return;
+            frame++;
+
+            player.vy += 0.5;
+            player.y += player.vy;
+            if (player.y >= GROUND - player.h) {
+                player.y = GROUND - player.h;
                 player.vy = 0;
                 player.grounded = true;
-                obstacles = [];
-                coins = [];
-                backpacks = [];
-                boss = null;
-                msgDisplay.textContent = 'Беги и собирай апельсинки!';
+            }
+
+            // Монеты
+            for (let c of coins) {
+                c.x -= speed;
+                if (!c.collected) {
+                    if (player.x + player.w > c.x && player.x < c.x + c.w &&
+                        player.y + player.h > c.y && player.y < c.y + c.h) {
+                        c.collected = true;
+                        score += 5;
+                        updateUI();
+                    }
+                }
+            }
+            coins = coins.filter(c => !c.collected && c.x > -20);
+
+            // Препятствия
+            for (let o of obstacles) {
+                o.x -= speed;
+            }
+            obstacles = obstacles.filter(o => o.x > -40);
+
+            // Поезда
+            for (let t of trains) {
+                t.x += t.vx;
+            }
+            trains = trains.filter(t => t.x > -60 && t.x < W + 60);
+
+            // Крылышки босса
+            for (let w of wings) {
+                w.x += w.vx;
+                w.y += w.vy || 0;
+            }
+            wings = wings.filter(w => w.x > -20 && w.x < W + 20);
+
+            // Ранцы
+            for (let b of backpacks) {
+                b.x += b.vx;
+            }
+            backpacks = backpacks.filter(b => b.x < W + 20);
+
+            // Столкновения с препятствиями
+            for (let o of obstacles) {
+                if (o.x < player.x + player.w && o.x + o.w > player.x &&
+                    o.y < player.y + player.h && o.y + o.h > player.y) {
+                    if (!o.hit) {
+                        o.hit = true;
+                        health--;
+                        updateUI();
+                        if (health <= 0) {
+                            gameOver = true;
+                            msgDisplay.textContent = '💀 Ты проиграл!';
+                        }
+                        obstacles = obstacles.filter(ob => ob !== o);
+                    }
+                }
+            }
+
+            // Столкновения с поездами
+            for (let t of trains) {
+                if (t.x < player.x + player.w && t.x + t.w > player.x &&
+                    t.y < player.y + player.h && t.y + t.h > player.y) {
+                    health--;
+                    updateUI();
+                    if (health <= 0) {
+                        gameOver = true;
+                        msgDisplay.textContent = '💀 Ты проиграл!';
+                    }
+                    trains = trains.filter(tr => tr !== t);
+                }
+            }
+
+            // Столкновения с крылышками
+            for (let w of wings) {
+                if (w.x < player.x + player.w && w.x + w.w > player.x &&
+                    w.y < player.y + player.h && w.y + w.h > player.y) {
+                    health--;
+                    updateUI();
+                    if (health <= 0) {
+                        gameOver = true;
+                        msgDisplay.textContent = '💀 Ты проиграл!';
+                    }
+                    wings = wings.filter(wi => wi !== w);
+                }
+            }
+
+            // Босс
+            if (bossActive && boss && !bossDefeated) {
+                boss.attackTimer++;
+                boss.phraseTimer++;
+                if (boss.attackTimer >= boss.cooldown) {
+                    bossAttack();
+                    boss.attackTimer = 0;
+                }
+                // Попадания ранцев
+                for (let b of backpacks) {
+                    if (b.x > boss.x && b.x < boss.x + boss.w &&
+                        b.y > boss.y && b.y < boss.y + boss.h) {
+                        bossHealth--;
+                        backpacks = backpacks.filter(bb => bb !== b);
+                        if (bossHealth <= 0) {
+                            bossDefeated = true;
+                            bossActive = false;
+                            score += 20;
+                            updateUI();
+                            msgDisplay.textContent = '🎉 Босс побежден! +20🍊';
+                            setTimeout(() => {
+                                msgDisplay.textContent = 'Продолжай бежать!';
+                            }, 2000);
+                        }
+                    }
+                }
+            }
+
+            // Спавн
+            if (!bossActive && !bossSpawned) {
+                if (frame % 60 === 0) spawnCoin();
+                if (frame % 70 === 0) spawnObstacle();
+                if (frame % 120 === 0) spawnTrain();
+            } else if (bossActive && !bossDefeated) {
+                // Во время босса — ничего не спавним, только крылышки
+            }
+
+            // Появление босса после 100 очков
+            if (score >= 100 && !bossSpawned) {
+                spawnBoss();
+            }
+
+            // Победа после 150 очков и победы над боссом
+            if (score >= 150 && bossDefeated && !gameWin) {
+                gameWin = true;
+                msgDisplay.textContent = '🏆 Ты победил!';
+            }
+
+            // Счёт
+            if (frame % 30 === 0 && !gameOver && !gameWin) {
+                score++;
                 updateUI();
             }
+        }
 
-            function updateUI() {
-                scoreDisplay.textContent = score;
-                healthDisplay.textContent = health;
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+
+            // Фон
+            const grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, '#1a1a3a');
+            grad.addColorStop(0.6, '#2a2a4a');
+            grad.addColorStop(1, '#0a0a1a');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Дорога
+            ctx.fillStyle = '#4a4a4a';
+            ctx.fillRect(0, GROUND, W, H - GROUND);
+            ctx.fillStyle = '#ff00ff33';
+            for (let i = 0; i < 20; i++) {
+                ctx.fillRect(i * 50 + frame * 2 % 1000, GROUND + 5, 30, 4);
             }
 
-            function jump() {
-                if (gameOver || gameWin) return;
-                if (player.grounded) {
-                    player.vy = -7;
-                    player.grounded = false;
-                }
+            // Поезда
+            for (let t of trains) {
+                ctx.fillStyle = '#ff6600';
+                ctx.fillRect(t.x, t.y, t.w, t.h);
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = '16px sans-serif';
+                ctx.fillText('🚂', t.x + 5, t.y + 20);
             }
 
-            function shoot() {
-                if (gameOver || gameWin) return;
-                if (!bossActive || bossDefeated) return;
-                backpacks.push({
-                    x: player.x + 20,
-                    y: player.y + 10,
-                    w: 15,
-                    h: 12,
-                    vx: 6
-                });
+            // Монеты
+            for (let c of coins) {
+                ctx.fillStyle = '#ffcc00';
+                ctx.shadowColor = '#ffcc00';
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(c.x + c.w / 2, c.y + c.h / 2, 6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
             }
 
-            function spawnCoin() {
-                coins.push({
-                    x: W + 20,
-                    y: 100 + Math.random() * (GROUND - 150),
-                    w: 12,
-                    h: 12,
-                    collected: false
-                });
-            }
-
-            function spawnObstacle() {
-                let y = GROUND - 30;
-                if (Math.random() < 0.3) y = 80 + Math.random() * 100;
-                obstacles.push({
-                    x: W + 20,
-                    y: y,
-                    w: 20,
-                    h: 20,
-                    type: Math.random() < 0.5 ? 'burger' : 'bayan'
-                });
-            }
-
-            function spawnBoss() {
-                boss = {
-                    x: W - 80,
-                    y: 100,
-                    w: 60,
-                    h: 70,
-                    attackTimer: 0,
-                    cooldown: 40
-                };
-                bossActive = true;
-                bossSpawned = true;
-                msgDisplay.textContent = '⚡ Босс T-2 X-2 появился!';
-                obstacles = [];
-            }
-
-            function bossAttack() {
-                if (!bossActive || bossDefeated) return;
-                obstacles.push({
-                    x: boss.x - 20,
-                    y: boss.y + 30,
-                    w: 20,
-                    h: 20,
-                    vx: -5,
-                    isBoss: true
-                });
-            }
-
-            function update() {
-                if (gameOver || gameWin) return;
-                frame++;
-
-                // Физика игрока
-                player.vy += 0.5;
-                player.y += player.vy;
-                if (player.y >= GROUND - player.h) {
-                    player.y = GROUND - player.h;
-                    player.vy = 0;
-                    player.grounded = true;
-                }
-
-                // Монеты
-                for (let c of coins) {
-                    c.x -= speed;
-                    if (!c.collected) {
-                        if (player.x + player.w > c.x && player.x < c.x + c.w &&
-                            player.y + player.h > c.y && player.y < c.y + c.h) {
-                            c.collected = true;
-                            score += 5;
-                            updateUI();
-                        }
-                    }
-                }
-                coins = coins.filter(c => !c.collected && c.x > -20);
-
-                // Препятствия
-                for (let o of obstacles) {
-                    o.x -= (o.vx || speed);
-                }
-                obstacles = obstacles.filter(o => o.x > -40);
-
-                // Ранцы
-                for (let b of backpacks) {
-                    b.x += b.vx;
-                }
-                backpacks = backpacks.filter(b => b.x < W + 20);
-
-                // Столкновения с препятствиями
-                for (let o of obstacles) {
-                    if (o.x < player.x + player.w && o.x + o.w > player.x &&
-                        o.y < player.y + player.h && o.y + o.h > player.y) {
-                        if (!o.hit) {
-                            o.hit = true;
-                            health--;
-                            updateUI();
-                            if (health <= 0) {
-                                gameOver = true;
-                                msgDisplay.textContent = '💀 Ты проиграл!';
-                            }
-                            obstacles = obstacles.filter(ob => ob !== o);
-                        }
-                    }
-                }
-
-                // Босс
-                if (bossActive && boss && !bossDefeated) {
-                    boss.attackTimer++;
-                    if (boss.attackTimer >= boss.cooldown) {
-                        bossAttack();
-                        boss.attackTimer = 0;
-                    }
-                    // Попадания ранцев
-                    for (let b of backpacks) {
-                        if (b.x > boss.x && b.x < boss.x + boss.w &&
-                            b.y > boss.y && b.y < boss.y + boss.h) {
-                            bossHealth--;
-                            backpacks = backpacks.filter(bb => bb !== b);
-                            if (bossHealth <= 0) {
-                                bossDefeated = true;
-                                bossActive = false;
-                                score += 20;
-                                updateUI();
-                                msgDisplay.textContent = '🎉 Босс побежден! +20🍊';
-                                setTimeout(() => {
-                                    msgDisplay.textContent = 'Продолжай бежать!';
-                                }, 2000);
-                            }
-                        }
-                    }
-                }
-
-                // Спавн
-                if (!bossActive && !bossSpawned) {
-                    if (frame % 60 === 0) spawnCoin();
-                    if (frame % 80 === 0) spawnObstacle();
-                } else if (bossActive && !bossDefeated) {
-                    // Во время босса — ничего не спавним
-                }
-
-                // Появление босса после 100 очков
-                if (score >= 100 && !bossSpawned) {
-                    spawnBoss();
-                }
-
-                // Победа после 150 очков и победы над боссом
-                if (score >= 150 && bossDefeated && !gameWin) {
-                    gameWin = true;
-                    msgDisplay.textContent = '🏆 Ты победил!';
-                }
-
-                // Счёт
-                if (frame % 30 === 0 && !gameOver && !gameWin) {
-                    score++;
-                    updateUI();
-                }
-            }
-
-            function draw() {
-                ctx.clearRect(0, 0, W, H);
-
-                // Фон
-                const grad = ctx.createLinearGradient(0, 0, 0, H);
-                grad.addColorStop(0, '#1a1a3a');
-                grad.addColorStop(0.6, '#2a2a4a');
-                grad.addColorStop(1, '#0a0a1a');
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, 0, W, H);
-
-                // Земля
-                ctx.fillStyle = '#4a4a4a';
-                ctx.fillRect(0, GROUND, W, H - GROUND);
-
-                // Монеты
-                for (let c of coins) {
-                    ctx.fillStyle = '#ffcc00';
-                    ctx.beginPath();
-                    ctx.arc(c.x + c.w / 2, c.y + c.h / 2, 6, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                // Препятствия
-                for (let o of obstacles) {
-                    if (o.isBoss) {
-                        ctx.fillStyle = '#ff4444';
-                    } else if (o.type === 'burger') {
-                        ctx.fillStyle = '#d4a373';
-                    } else {
-                        ctx.fillStyle = '#8B4513';
-                    }
+            // Препятствия
+            for (let o of obstacles) {
+                if (o.type === 'burger') {
+                    ctx.fillStyle = '#d4a373';
                     ctx.fillRect(o.x, o.y, o.w, o.h);
-                }
-
-                // Ранцы
-                for (let b of backpacks) {
-                    ctx.fillStyle = '#2a9d8f';
-                    ctx.fillRect(b.x, b.y, b.w, b.h);
-                }
-
-                // Босс
-                if (bossActive && boss && !bossDefeated) {
-                    ctx.fillStyle = '#2b2b2b';
-                    ctx.fillRect(boss.x, boss.y, boss.w, boss.h);
-                    ctx.fillStyle = '#ff4444';
-                    ctx.font = 'bold 12px sans-serif';
-                    ctx.fillText('T-2 X-2', boss.x + 5, boss.y + 15);
-                    // HP
-                    ctx.fillStyle = '#333';
-                    ctx.fillRect(boss.x, boss.y - 10, boss.w, 6);
-                    ctx.fillStyle = '#ffcc00';
-                    ctx.fillRect(boss.x, boss.y - 10, boss.w * (bossHealth / 5), 6);
-                }
-
-                // Игрок
-                ctx.fillStyle = '#8B5A2B';
-                ctx.fillRect(player.x, player.y, player.w, player.h);
-                ctx.fillStyle = '#5C3A1E';
-                ctx.fillRect(player.x + 4, player.y - 6, 22, 8);
-
-                // UI
-                if (gameOver) {
-                    ctx.fillStyle = 'rgba(0,0,0,0.7)';
-                    ctx.fillRect(0, 0, W, H);
-                    ctx.fillStyle = '#ff4444';
-                    ctx.font = 'bold 24px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('GAME OVER', W / 2, H / 2);
-                }
-                if (gameWin) {
-                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                    ctx.fillRect(0, 0, W, H);
-                    ctx.fillStyle = '#ffcc00';
-                    ctx.font = 'bold 24px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('🎉 ПОБЕДА!', W / 2, H / 2);
+                    ctx.fillStyle = '#f4a261';
+                    ctx.fillRect(o.x - 2, o.y - 4, o.w + 4, 6);
+                } else {
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(o.x, o.y, o.w, o.h);
+                    ctx.fillStyle = '#D2B48C';
+                    ctx.fillRect(o.x + 2, o.y + 2, o.w - 4, o.h - 4);
                 }
             }
 
-            function loop() {
-                update();
-                draw();
-                requestAnimationFrame(loop);
+            // Крылышки KFC
+            for (let w of wings) {
+                ctx.fillStyle = '#d4a373';
+                ctx.fillRect(w.x, w.y, w.w, w.h);
+                ctx.fillStyle = '#f4a261';
+                ctx.fillRect(w.x, w.y - 2, w.w, 4);
+                ctx.fillStyle = '#fff';
+                ctx.font = '8px sans-serif';
+                ctx.fillText('🍗', w.x, w.y + 10);
             }
 
-            // События
-            canvas.addEventListener('click', (e) => {
-                e.preventDefault();
-                jump();
-            });
-            canvas.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                jump();
-            });
-            canvas.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                shoot();
-            });
+            // Ранцы
+            for (let b of backpacks) {
+                ctx.fillStyle = '#2a9d8f';
+                ctx.fillRect(b.x, b.y, b.w, b.h);
+                ctx.fillStyle = '#e9c46a';
+                ctx.fillRect(b.x + 4, b.y - 2, 8, 4);
+            }
 
-            restartBtn.addEventListener('click', reset);
-            document.addEventListener('keydown', (e) => {
-                if (e.key === ' ' || e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    jump();
+            // Босс (человек в кофточке)
+            if (bossActive && boss && !bossDefeated) {
+                // Тело
+                ctx.fillStyle = '#4a4a6a';
+                ctx.fillRect(boss.x, boss.y + 30, boss.w, boss.h - 30);
+                // Голова
+                ctx.fillStyle = '#e8c9a0';
+                ctx.fillRect(boss.x + 10, boss.y, boss.w - 20, 35);
+                // Глаза
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(boss.x + 15, boss.y + 10, 8, 8);
+                ctx.fillRect(boss.x + boss.w - 23, boss.y + 10, 8, 8);
+                ctx.fillStyle = '#000';
+                ctx.fillRect(boss.x + 17, boss.y + 12, 4, 4);
+                ctx.fillRect(boss.x + boss.w - 21, boss.y + 12, 4, 4);
+                // Рот
+                ctx.fillStyle = '#000';
+                ctx.fillRect(boss.x + 20, boss.y + 25, boss.w - 40, 4);
+                // Кофточка
+                ctx.fillStyle = '#6a4a6a';
+                ctx.fillRect(boss.x, boss.y + 35, boss.w, 25);
+                ctx.fillStyle = '#8a6a8a';
+                ctx.fillRect(boss.x + 5, boss.y + 40, 15, 15);
+                ctx.fillRect(boss.x + boss.w - 20, boss.y + 40, 15, 15);
+                // Руки
+                ctx.fillStyle = '#e8c9a0';
+                ctx.fillRect(boss.x - 10, boss.y + 40, 12, 25);
+                ctx.fillRect(boss.x + boss.w - 2, boss.y + 40, 12, 25);
+                // Ноги
+                ctx.fillStyle = '#2a2a4a';
+                ctx.fillRect(boss.x + 10, boss.y + boss.h - 15, 15, 20);
+                ctx.fillRect(boss.x + boss.w - 25, boss.y + boss.h - 15, 15, 20);
+                // HP
+                ctx.fillStyle = '#333';
+                ctx.fillRect(boss.x, boss.y - 15, boss.w, 6);
+                ctx.fillStyle = '#ffcc00';
+                ctx.fillRect(boss.x, boss.y - 15, boss.w * (bossHealth / 5), 6);
+                // Фраза
+                if (boss.phraseTimer < 100) {
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '12px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('"Я в кофточке!"', boss.x + boss.w / 2, boss.y - 25);
                 }
-                if (e.key === 'f' || e.key === 'F') {
-                    e.preventDefault();
-                    shoot();
-                }
-            });
+                ctx.textAlign = 'left';
+            }
 
-            reset();
-            loop();
-        })();
-    </script>
+            // Игрок
+            ctx.fillStyle = '#8B5A2B';
+            ctx.fillRect(player.x, player.y, player.w, player.h);
+            ctx.fillStyle = '#5C3A1E';
+            ctx.fillRect(player.x + 4, player.y - 6, 22, 8);
+
+            // UI
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, W, H);
+                ctx.fillStyle = '#ff4444';
+                ctx.font = 'bold 24px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', W / 2, H / 2);
+            }
+            if (gameWin) {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(0, 0, W, H);
+                ctx.fillStyle = '#ffcc00';
+                ctx.font = 'bold 24px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('🎉 ПОБЕДА!', W / 2, H / 2);
+            }
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        jumpBtn.addEventListener('click', jump);
+        shootBtn.addEventListener('click', shoot);
+        canvas.addEventListener('click', (e) => { e.preventDefault(); jump(); });
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); });
+        restartBtn.addEventListener('click', reset);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' || e.key === 'ArrowUp') { e.preventDefault(); jump(); }
+            if (e.key === 'f' || e.key === 'F') { e.preventDefault(); shoot(); }
+        });
+
+        reset();
+        loop();
+    })();
+</script>
 </body>
 </html>
