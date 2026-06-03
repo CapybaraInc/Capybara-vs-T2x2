@@ -99,15 +99,15 @@
         let hitEffect = 0;
         let bossHitEffect = 0;
 
-        const GROUND = H - 80;
+        const GROUND = H - 60;
         const LANE_W = 60;
         const LANES = [-LANE_W, 0, LANE_W];
 
         let player = {
             x: 50 + LANES[1],
-            y: H - 100,
+            y: H - 80,
             w: 25,
-            h: 35,
+            h: 30,
             vy: 0,
             grounded: true
         };
@@ -134,7 +134,7 @@
             hitEffect = 0;
             bossHitEffect = 0;
             player.x = 50 + LANES[1];
-            player.y = H - 100;
+            player.y = H - 80;
             player.vy = 0;
             player.grounded = true;
             obstacles = [];
@@ -187,7 +187,7 @@
             const l = Math.floor(Math.random() * 3);
             coins.push({
                 x: 50 + LANES[l],
-                y: 20 + Math.random() * 50,
+                y: 20,
                 w: 10,
                 h: 10,
                 collected: false
@@ -198,9 +198,9 @@
             const l = Math.floor(Math.random() * 3);
             obstacles.push({
                 x: 50 + LANES[l],
-                y: 20 + Math.random() * 50,
-                w: 20,
-                h: 20,
+                y: 20,
+                w: 25,
+                h: 25,
                 hit: false
             });
         }
@@ -210,7 +210,7 @@
             const l = Math.floor(Math.random() * 3);
             wings.push({
                 x: 50 + LANES[l],
-                y: 20 + Math.random() * 50,
+                y: 20,
                 w: 15,
                 h: 10,
                 vx: -3 - Math.random() * 2
@@ -220,7 +220,7 @@
         function spawnBoss() {
             boss = {
                 x: 50 + LANES[1],
-                y: 30,
+                y: 20,
                 w: 70,
                 h: 90,
                 attackTimer: 0,
@@ -390,9 +390,6 @@
             for (let i = 0; i < 3; i++) {
                 ctx.fillRect(20 + i * LANE_W * 2 + LANE_W / 2 - 1, 0, 2, H);
             }
-            for (let i = 0; i < 20; i++) {
-                ctx.fillRect(i * 40 + frame * 2 % 800, GROUND - 10, 20, 4);
-            }
 
             // Монеты
             for (let c of coins) {
@@ -429,7 +426,7 @@
                 ctx.fillRect(b.x + 4, b.y - 2, 8, 4);
             }
 
-            // Босс
+            // Босс (фото с ведром KFC)
             if (bossActive && boss && !bossDefeated) {
                 ctx.drawImage(bossStand, boss.x, boss.y, boss.w, boss.h);
                 // HP
